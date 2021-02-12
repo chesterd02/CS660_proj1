@@ -28,6 +28,7 @@ def parse_log_line(line):
         sys.stderr.write('Could not parse log line: %s\n' % line)
         return
 
+    print ("*****date: ", m.group('timestamp'))
     # return get_timestamp_from_log(m.group('timestamp'), m.group('microseconds'))
     log_ts = get_timestamp_from_log(m.group('timestamp'), m.group('microseconds'))
 
@@ -140,7 +141,7 @@ def getFlagCount (tableName):
 def getTotalCount (tableName):
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()
-    sql = "SELECT * FROM " + tableName + "ORDER BY ID DESC LIMIT 1"
+    sql = "SELECT * FROM " + tableName + " ORDER BY ID DESC LIMIT 1"
     cursor.execute(sql)
     rows = cursor.fetchall()
     connection.close()
@@ -210,32 +211,59 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('logfile', type=argparse.FileType('r', encoding='utf-8'))
     args = parser.parse_args(sys.argv[1:])
-    print(args.logfile.name)
-    i = 0
-    while i < 5:
+    # # print(args.logfile.name)
+    #
+    while True:
         line = args.logfile.readline()
         line = line.rstrip()
-        # ipv4, ipv6 = parse_log_line(line, ipv4, ipv6)
-        # ts = parse_log_line(line)
-        # ts_array.append(ts)
         if not line:
             break
-        sys.stdout.write('%s\n' % json.dumps(parse_log_line(line)))
-        i += 1
+        insertToDatabase(line)
+
+    # i = 0
+    # while i < 5:
+    #     line = args.logfile.readline()
+    #     line = line.rstrip()
+    #     # ipv4, ipv6 = parse_log_line(line, ipv4, ipv6)
+    #     # ts = parse_log_line(line)
+    #     # ts_array.append(ts)
+    #     if not line:
+    #         break
+    #     sys.stdout.write('%s\n' % json.dumps(parse_log_line(line)))
+    #     i += 1
+
     # print ("flags: ", getFlagCount('march32019'))
+    # print("total: ", getTotalCount('march32019'))
     # print ("qtype: ", getQTypeCount('march32019'))
     # print ("IPV6 Count: ", getIPV6Count('march32019'))
-    print("qname: ", getQNameCount('march32019', 4))
-    print("clientIP: ", getSourceIpCount('march32019', 4))
-    print("serverIP: ", getDestIpCount('march32019', 4))
-    print("Ports: ", getPortCount('march32019', 4))
+    # print("qname: ", getQNameCount('march32019', 4))
+    # print("clientIP: ", getSourceIpCount('march32019', 4))
+    # print("serverIP: ", getDestIpCount('march32019', 4))
+    # print("Ports: ", getPortCount('march32019', 4))
+    # ipv6 = getIPV6Count('march32019')[0]
+    # total = getTotalCount('march32019')[0]
+    # print("ipv6: ", ipv6, "total: ", total )
+    # ipv4 = total - ipv6
+    # ipFrequencyChart(ipv4, ipv6)
     # testDatabase('march32019')
     # checkDatabase()
-    # ipFrequencyChart(ipv4, ipv6)
-    # qnameFrequencyChart(args.logfile.name)
-    # portFrequencyChart(args.logfile.name)
+    # qnameFreq = getQNameCount('march32019', 8)
+    # qnameFrequencyChart('march32019', qnameFreq)
+    # portFreq = getPortCount('march32019', 8)
+    # portFrequencyChart('march32019', portFreq)
 
+    # analyzeTime()
 
+def analyzeTime():
+    # CONVERT(data_type(length), expression, style)
+    # monday []
+    # tuesday []
+    # convert time to day
+    # if Monday monday.append(i)
+
+    # graph all days
+
+    return
 
     # while True:
     #     line = args.logfile.readline()
@@ -256,10 +284,8 @@ def ipFrequencyChart(ipv4, ipv6):
     plt.xticks(x_pos, ips)
     plt.show()
 
-def qnameFrequencyChart(fileName):
-    popularity_data = sorted(qname_dict.items(), key=lambda item: item[1], reverse=True)
-    popularity_data = popularity_data[:8]            #only look at the most frequent 8
-    dns, score = zip(*popularity_data)
+def qnameFrequencyChart(fileName, qnameFreq):
+    dns, score = zip(*qnameFreq)
     x_pos = np.arange(len(dns))
 
     # slope, intercept = np.polyfit(x_pos, score, 1)
@@ -271,10 +297,8 @@ def qnameFrequencyChart(fileName):
     plt.title(fileName)
     plt.show()
 
-def portFrequencyChart(fileName):
-    port_data = sorted(port_dict.items(), key=lambda item: item[1], reverse=True)
-    # port_data = port_data[:8]            #only look at the most frequent 8
-    port, score = zip(*port_dict.items())
+def portFrequencyChart(fileName, portFreq):
+    port, score = zip(*portFreq)
     x_pos = np.arange(len(port))
 
     # slope, intercept = np.polyfit(x_pos, score, 1)
