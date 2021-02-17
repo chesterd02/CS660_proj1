@@ -205,20 +205,40 @@ def getPortCount (tableName, quantity):
     sortedRows = sorted(rows, key=lambda k:k[1], reverse=True)
     return sortedRows[:quantity]
 
+def lineToSQL(line):
+    line = line.strip()
+    m = QUERY_LOG_RE.search(line)
+    if m is None:
+        sys.stderr.write('Could not parse log line: %s\n' % line)
+        return ''
+    log_ts = get_timestamp_from_log(m.group('timestamp'), m.group('microseconds'))
+    return f"('{log_ts}'," \
+        f"'{m.group('qname')}'," \
+        f"'{m.group('qtype')}'," \
+        f"'{m.group('server_ip')}'," \
+        f"'{m.group('client_ip')}'," \
+        f"'{m.group('client_port')}'," \
+        f"'{m.group('flags')}')"
+
 def main():
     # clearTable()
     # createTable()
     parser = argparse.ArgumentParser()
     parser.add_argument('logfile', type=argparse.FileType('r', encoding='utf-8'))
     args = parser.parse_args(sys.argv[1:])
+    lines = args.logfile.readlines()
     # # print(args.logfile.name)
     #
-    while True:
-        line = args.logfile.readline()
-        line = line.rstrip()
-        if not line:
-            break
-        insertToDatabase(line)
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    for x in range(0, len(lines), 1000):
+        cursor.execute(
+            "INSERT INTO march32019 (INITTIME, QNAME, QTYPE, SERVERIP, CLIENTIP, CLIENTPORT, FLAGS) VALUES " +
+            ",".join(filter(lambda item: item != "", map(lineToSQL, lines[x:x + 1000]))) +
+            ";"
+            )
+        connection.commit()
+    connection.close()
 
     # i = 0
     # while i < 5:
